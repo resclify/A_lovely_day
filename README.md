@@ -1,4 +1,10 @@
-# aLovelyDay
+# A lovely day
+
+A small game made for libGDX Jam 22 with the theme "Post Apocalyptic".
+
+![](publish/screenshot1.png)
+
+---
 
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/tommyettinger/gdx-liftoff).
 
