@@ -5,16 +5,17 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.InputMultiplexer
 import com.badlogic.gdx.graphics.Camera
+import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch
 import com.badlogic.gdx.graphics.g2d.Sprite
 import com.badlogic.gdx.graphics.g2d.TextureRegion
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.physics.box2d.*
 import com.badlogic.gdx.physics.box2d.joints.WheelJoint
-import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.viewport.ExtendViewport
@@ -43,6 +44,7 @@ class GameScreen : KtxScreen {
     val worldWidth = 100f
     val world = World(Vector2(0f, -9.81f), false)
     val sb = PolygonSpriteBatch()
+    val shapeRenderer = ShapeRenderer()
 
     private val worldStage = Stage(ExtendViewport(worldWidth, worldWidth * 1080f / 1920f))
     private val uiStage = Stage(ExtendViewport(1920f, 1080f))
@@ -196,7 +198,7 @@ class GameScreen : KtxScreen {
 
     var counter = 0f
     fun restartGame() {
-        counter = 5.5f
+        counter = 3.5f//5.5f
         bikeBody.setTransform(bikeStartPosition, 0f)
         bikeBody.setLinearVelocity(0f, 0f)
         bikeBody.angularVelocity = 0f
@@ -261,6 +263,8 @@ class GameScreen : KtxScreen {
         setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
     })
+    val carWreckTexture = TextureRegion(Texture("car_wreck.png"))
+    val corpusTexture = TextureRegion(Texture("corpus.png"))
 
     val terrainPart1 = TerrainPart(stoneTexture2, physicsObject = PhysicsObjects.terrainGround1).apply {
         addBodyToWorld(
@@ -287,9 +291,27 @@ class GameScreen : KtxScreen {
         setSize(15f, 15f * texture.height.toFloat() / texture.width.toFloat())
         setPosition(109f, 12f)
     }
+    val signFast = Sprite(Texture("sign_fast.png")).apply {
+        setSize(15f, 15f * texture.height.toFloat() / texture.width.toFloat())
+        setPosition(767f, 152f)
+    }
+    val signFinish = Sprite(Texture("sign_finish.png")).apply {
+        setSize(15f, 15f * texture.height.toFloat() / texture.width.toFloat())
+        setPosition(1660f, -49.5f)
+    }
+    val carWreck = StaticObject(carWreckTexture, PhysicsObjects.carWreck, size = 15f, pos = Vector2(6f, 10f)).apply {
+        addBodyToWorld(world, 0.8f)
+    }
 
-    val backgroundSprites = listOf(startSign, deadTree)
+    val corpus = StaticObject(corpusTexture, PhysicsObjects.corpus, size = 50f, pos = Vector2(53f, 7f)).apply {
+        addBodyToWorld(
+            world,
+            1.8f
+        )
+    }
 
+    val backgroundSprites = listOf(startSign, signFast, signFinish, carWreck.sprite, corpus.sprite)
+    val foregroundSprites = listOf(deadTree)
 
     val averageFloat = AverageFloat(count = 200, startValue = 0.70f)
 
@@ -394,6 +416,19 @@ class GameScreen : KtxScreen {
         sb.begin(camera)
 
         terrainParts.forEach { it.polySprite.draw(sb) }
+
+        sb.end()
+
+        shapeRenderer.projectionMatrix = worldStage.camera.combined
+        shapeRenderer.setAutoShapeType(true)
+        shapeRenderer.color = Color.BLACK
+        shapeRenderer.begin()
+        for (terrainPart in terrainParts) {
+            terrainPart.drawOutline(shapeRenderer)
+        }
+        shapeRenderer.end()
+
+        sb.begin(camera)
         backgroundSprites.forEach { it.draw(sb) }
 
         tireFrontSprite.setSize(13.5f * bikeScaling * 2f, 13.5f * bikeScaling * 2f)
@@ -406,12 +441,13 @@ class GameScreen : KtxScreen {
         tireBackSprite.transformFromBody(tireBack)
         tireBackSprite.draw(sb)
         bikeSprite.setSize(5.5f, 3.3f)
-        //.map { it.sub(Vector2(2.7941f, 2.875546f)) }
         bikeSprite.setOrigin(0.15f + 2.7941f, -1.75f + 2.875546f)
         bikeSprite.transformFromBody(bikeBody)
         bikeSprite.draw(sb)
 
+        foregroundSprites.forEach { it.draw(sb) }
         sb.end()
+
 
         worldStage.draw()
         uiStage.draw()
